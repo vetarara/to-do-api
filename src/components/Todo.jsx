@@ -1,62 +1,129 @@
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
+
+import Button from "./Button"
 import AddTaskForm from "./AddTaskForm"
 import SearchTaskForm from "./SearchTaskForm"
 import TodoInfo from "./TodoInfo"
 import TodoList from "./TodoList"
 
 const Todo = () => {
-    const tasks = [
-        {
-            id: 'task-1',
-            title: 'Купить молоко',
-            isDone: false
-        },
-        {
-            id: 'task-2',
-            title: 'Погладить кота',
-            isDone: true
-        }
-    ]
+  const [tasks, setTasks] = useState(() => {
+    const savedTasks = localStorage.getItem('tasks')
 
-    const deleteAllTasks = () => {
-        console.log('Удаляем все задачи!')
+    if (savedTasks) {
+      return JSON.parse(savedTasks)
     }
 
-    const deleteTask = (taskId) => {
-        console.log(`Удаляем задачу с id: ${taskId}`)
-    }
+    return [{
+      id: 'task-1',
+      title: 'Купить молоко',
+      isDone: false
+    },
+    {
+      id: 'task-2',
+      title: 'Погладить кота',
+      isDone: true
+    }]
+  });
 
-    const toggleTaskComplete = (taskId, isDone) => {
-        console.log(`Задача ${taskId} ${isDone ? 'выполнена' : 'не выполнена'}`)
-    }
+  const [newTaskTitle, setNewTaskTitle] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
 
-    const filterTasks = (query) => {
-        console.log(`Поиск: ${query}`)
-    }
+  const newTaskInputRef = useRef(null)
+  const firstIncompleteTaskRef = useRef(null)
+  const firstIncompleteTaskId = tasks.find(({ isDone }) => !isDone)?.id
 
-    const addTask = () => {
-        console.log('Задача добавлена!')
-    }
+  const deleteAllTasks = useCallback(() => {
+    const isConfirmed = confirm("Are you sure you want to delete all?")
 
-    return (
-        <div className="todo">
-            <h1 className="todo__title">To Do List</h1>
-            <AddTaskForm addTask={addTask} />
-            <SearchTaskForm onSearchInput={filterTasks} />
-            <TodoInfo
-                total={tasks.length}
-                done={tasks.filter(({ isDone }) => isDone).length}
-                // TodoInfo - реакт-компонент, при его использовании можно писать любое имя пропса 
-                // например, не onClick, а onDeleteAllButtonClick
-                // проп содержит функцию, которую нужно вызвать при нажатии кнопки
-                onDeleteAllButtonClick={deleteAllTasks}
-            />
-            <TodoList
-                tasks={tasks}
-                onDeleteTaskButtonClick={deleteTask}
-                onTaskCompleteChange={toggleTaskComplete}
-            />
-        </div>
+    if (isConfirmed) {
+      setTasks([])
+    }
+  }, [])
+
+  const deleteTask = useCallback((taskId) => {
+    setTasks(
+      tasks.filter((task) => task.id !== taskId)
     )
+  }, [tasks])
+
+  const toggleTaskComplete = useCallback((taskId, isDone) => {
+    setTasks(
+      tasks.map((task) => {
+        if (task.id === taskId) {
+          return { ...task, isDone }
+        }
+        return task
+      })
+    )
+  }, [tasks])
+
+  const addTask = useCallback(() => {
+    if (newTaskTitle.trim().length > 0) {
+      const newTask = {
+        id: crypto?.randomUUID() ?? Date.now().toString(),
+        title: newTaskTitle,
+        isDone: false,
+      }
+
+      setTasks((prevTasks) => [...prevTasks, newTask])
+      setNewTaskTitle('')
+      setSearchQuery('')
+      newTaskInputRef.current.focus()
+    }
+  }, [newTaskTitle])
+
+  useEffect(() => {
+    localStorage.setItem('tasks', JSON.stringify(tasks))
+  }, [tasks])
+
+  useEffect(() => {
+    newTaskInputRef.current.focus()
+  }, [])
+
+  const filteredTasks = useMemo(() => {
+    const clearSearchQuery = searchQuery.trim().toLocaleLowerCase()
+
+    return clearSearchQuery.length > 0
+      ? tasks.filter(({ title }) => title.toLowerCase().includes(clearSearchQuery))
+      : null
+  }, [searchQuery, tasks])
+
+  const doneTasks = useMemo(() => {
+    return tasks.filter(({ isDone }) => isDone).length
+  }, [tasks])
+
+  return (
+    <div className="todo">
+      <h1 className="todo__title">To Do List</h1>
+      <AddTaskForm
+        addTask={addTask}
+        newTaskTitle={newTaskTitle}
+        setNewTaskTitle={setNewTaskTitle}
+        newTaskInputRef={newTaskInputRef}
+      />
+      <SearchTaskForm
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+      />
+      <TodoInfo
+        total={tasks.length}
+        done={doneTasks}
+        onDeleteAllButtonClick={deleteAllTasks}
+      />
+      <Button onClick={() => firstIncompleteTaskRef.current?.scrollIntoView({ behavior: 'smooth' })}>
+        Show first incomplete task
+      </Button>
+      <TodoList
+        tasks={tasks}
+        filteredTasks={filteredTasks}
+        firstIncompleteTaskRef={firstIncompleteTaskRef}
+        firstIncompleteTaskId={firstIncompleteTaskId}
+        onDeleteTaskButtonClick={deleteTask}
+        onTaskCompleteChange={toggleTaskComplete}
+      />
+    </div>
+  )
 }
 
 export default Todo
