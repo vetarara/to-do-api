@@ -1,15 +1,16 @@
+import { useContext } from "react"
 import Field from "./Field"
+import { TasksContext } from "../context/TasksContext"
 
-const SearchTaskForm = (props) => {
+const SearchTaskForm = () => {
   const {
     searchQuery,
     setSearchQuery
-  } = props
+  } = useContext(TasksContext)
 
   return (
     <form
       className="todo__form"
-      // этого достаточно, чтобы нажатие Enter не перезагружало страницу
       onSubmit={(event) => event.preventDefault()}
     >
       <Field
