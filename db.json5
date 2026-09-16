@@ -1,12 +1,1 @@
-{
-  tasks: [{
-    id: 'task-1',
-    title: 'Купить молоко',
-    isDone: false
-  },
-  {
-    id: 'task-2',
-    title: 'Погладить кота',
-    isDone: true
-  }]
-}
+{tasks:[{id:'d07f',title:'2',isDone:true},{id:'09c2',title:'3',isDone:false},{id:'143b',title:'5',isDone:true},{id:'31d5',title:'1',isDone:false}]}
